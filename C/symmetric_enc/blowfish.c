@@ -1,137 +1,69 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <openssl/evp.h>
+#include <openssl/blowfish.h>
 
-// Encrypts the plaintext using Blowfish with the given key and iv
-// Returns the ciphertext as a newly allocated buffer (which should be freed by the caller)
-// Returns NULL on error
-unsigned char *blowfish_encrypt(const unsigned char *plaintext, int plaintext_len,
-                                const unsigned char *key, const unsigned char *iv,
-                                int *ciphertext_len);
+#define BLOCK_SIZE 8
 
-// Decrypts the ciphertext using Blowfish with the given key and iv
-// Returns the plaintext as a newly allocated buffer (which should be freed by the caller)
-// Returns NULL on error
-unsigned char *blowfish_decrypt(const unsigned char *ciphertext, int ciphertext_len,
-                                const unsigned char *key, const unsigned char *iv,
-                                int *plaintext_len);
-
-
-unsigned char *blowfish_encrypt(const unsigned char *plaintext, int plaintext_len,
-                            const unsigned char *key, const unsigned char *iv,
-                            int *ciphertext_len) {
-    EVP_CIPHER_CTX *ctx;
-    unsigned char *ciphertext;
-
-    // Create and initialize the context
-    if (!(ctx = EVP_CIPHER_CTX_new())) 
-        return NULL;
-    if (1 != EVP_EncryptInit_ex(ctx, EVP_bf_cbc(), NULL, key, iv)) {
-        EVP_CIPHER_CTX_free(ctx);
-        return NULL;
+int main(int argc, char *argv[]){
+    // For real application we need to use a secure method of generating a random key and iv.
+    char *key = "1838";
+    int key_len = strlen(key);
+    if (key_len < 4 || key_len > 56) {
+        fprintf(stderr, "Error: key must be between 4 and 56 bytes\n");
+        return 1;
     }
 
-    // Allocate memory for the ciphertext
-    ciphertext = malloc(plaintext_len + EVP_CIPHER_CTX_block_size(ctx));
-    if (!ciphertext) {
-    EVP_CIPHER_CTX_free(ctx);
-    return NULL;
+    char *message = "Private!";
+    int message_len = strlen(message);
+    // Create a Blowfish context
+    BF_KEY bf_key;
+    BF_set_key(&bf_key, key_len, (unsigned char*)key);
+
+    // Add padding to the message to ensure that it is an integer multiple of the block size (Need a length multiple of the block size 8bytes)
+    int padded_len = (message_len + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
+    unsigned char *padded_message = calloc(padded_len, 1);
+    memcpy(padded_message, message, message_len);
+
+
+    // Allocate memory for the encrypted message
+    unsigned char *encrypted_message = malloc(padded_len + BLOCK_SIZE);
+    if (encrypted_message == NULL) {
+        perror("malloc");
+        return 1;
     }
 
-    // Encrypt the plaintext
-    if (1 != EVP_EncryptUpdate(ctx, ciphertext, ciphertext_len, plaintext, plaintext_len)) {
-    EVP_CIPHER_CTX_free(ctx);
-    free(ciphertext);
-    return NULL;
+    // Encrypt the message
+    BF_ecb_encrypt(padded_message, encrypted_message, &bf_key, BF_ENCRYPT);
+
+    // The encrypted message will be at least one block (8 bytes) larger than the padded message
+    int encrypted_len = padded_len + BLOCK_SIZE;
+
+    // Print the encrypted message
+    printf("Encrypted message: ");
+    for (int i = 0; i < encrypted_len + BLOCK_SIZE; i++) {
+        printf("%02x", encrypted_message[i]);
     }
-    int len;
-    if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + *ciphertext_len, &len)) {
-    EVP_CIPHER_CTX_free(ctx);
-    free(ciphertext);
-    return NULL;
-    }
-    *ciphertext_len += len;
+    printf("\n");
 
-    // Clean up
-    EVP_CIPHER_CTX_free(ctx);
-
-    return ciphertext;
-}
-
-unsigned char *blowfish_decrypt(const unsigned char *ciphertext, int ciphertext_len,
-                            const unsigned char *key, const unsigned char *iv,
-                            int *plaintext_len) {
-    EVP_CIPHER_CTX *ctx;
-    unsigned char *plaintext;
-
-    // Create and initialize the context
-    if (!(ctx = EVP_CIPHER_CTX_new())) {
-    return NULL;
-    }
-    if (1 != EVP_DecryptInit_ex(ctx, EVP_bf_cbc(), NULL, key, iv)) {
-    EVP_CIPHER_CTX_free(ctx);
-    return NULL;
+    // Allocate memory for the decrypted message
+    unsigned char *decrypted_message = malloc(encrypted_len);
+    if (decrypted_message == NULL) {
+        perror("malloc");
+        return 1;
     }
 
-    // Allocate memory for the plaintext
-    plaintext = malloc(ciphertext_len + EVP_CIPHER_CTX_block_size(ctx));
-    if (!plaintext) {
-        EVP_CIPHER_CTX_free(ctx);
-        return NULL;
-    }
-    // Decrypt the ciphertext
-    if (1 != EVP_DecryptUpdate(ctx, plaintext, plaintext_len, ciphertext, ciphertext_len)) {
-    EVP_CIPHER_CTX_free(ctx);
-    free(plaintext);
-    return NULL;
-    }
-    int len;
-    if (1 != EVP_DecryptFinal_ex(ctx, plaintext + *plaintext_len, &len)) {
-    EVP_CIPHER_CTX_free(ctx);
-    free(plaintext);
-    return NULL;
-    }
-    *plaintext_len += len;
+    // Decrypt the message
+    BF_ecb_encrypt(encrypted_message, decrypted_message, &bf_key, BF_DECRYPT);
 
-    // Clean up
-    EVP_CIPHER_CTX_free(ctx);
+    // Print the decrypted message
+    printf("Decrypted message: %s\n", decrypted_message);
 
-    return plaintext;
-}
+    // Free the allocated memory
+    free(padded_message);
+    free(encrypted_message);
+    free(decrypted_message);
 
-int main(int argc, char *argv[]) {
-    // Set the key and iv
-    unsigned char key[32] = {0};
-    unsigned char iv[16] = {0};
-
-    // Set the plaintext
-    unsigned char *plaintext = (unsigned char *)"Hello, world!";
-    int plaintext_len = strlen((char *)plaintext);
-
-    // Encrypt the plaintext
-    int ciphertext_len;
-    unsigned char *ciphertext = blowfish_encrypt(plaintext, plaintext_len, key, iv, &ciphertext_len);
-    if (!ciphertext) {
-    printf("Error encrypting the plaintext\n");
-    return 1;
-    }
-
-    // Decrypt the ciphertext
-    int decrypted_len;
-    unsigned char *decrypted = blowfish_decrypt(ciphertext, ciphertext_len, key, iv, &decrypted_len);
-    if (!decrypted) {
-    printf("Error decrypting the ciphertext\n");
-    free(ciphertext);
-    return 1;
-    }
-
-    // Print the plaintext and decrypted data
-    printf("Plaintext: %s\n", plaintext);
-    printf("Decrypted: %s\n", decrypted);
-
-    // Clean up
-    free(ciphertext);
-    free(decrypted);
 
     return 0;
 }

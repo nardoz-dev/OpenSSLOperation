@@ -23,32 +23,31 @@ unsigned char *aes_cbc_encrypt(const unsigned char *plaintext, int plaintext_len
     unsigned char *ciphertext;
 
     // Create and initialize the context
-    if (!(ctx = EVP_CIPHER_CTX_new())) {
-    return NULL;
-    }
-    if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
-    EVP_CIPHER_CTX_free(ctx);
-    return NULL;
+    if (!(ctx = EVP_CIPHER_CTX_new()))
+      return NULL;
+    if (EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv) != 1) {
+      EVP_CIPHER_CTX_free(ctx);
+      return NULL;
     }
 
     // Allocate memory for the ciphertext
     ciphertext = malloc(plaintext_len + EVP_CIPHER_CTX_block_size(ctx));
     if (!ciphertext) {
-    EVP_CIPHER_CTX_free(ctx);
-    return NULL;
+      EVP_CIPHER_CTX_free(ctx);
+      return NULL;
     }
 
     // Encrypt the plaintext
-    if (1 != EVP_EncryptUpdate(ctx, ciphertext, ciphertext_len, plaintext, plaintext_len)) {
-    EVP_CIPHER_CTX_free(ctx);
-    free(ciphertext);
-    return NULL;
+    if (EVP_EncryptUpdate(ctx, ciphertext, ciphertext_len, plaintext, plaintext_len) != 1 ) {
+      EVP_CIPHER_CTX_free(ctx);
+      free(ciphertext);
+      return NULL;
     }
     int len;
-    if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + *ciphertext_len, &len)) {
-    EVP_CIPHER_CTX_free(ctx);
-    free(ciphertext);
-    return NULL;
+    if (EVP_EncryptFinal_ex(ctx, ciphertext + *ciphertext_len, &len) != 1 ) {
+      EVP_CIPHER_CTX_free(ctx);
+      free(ciphertext);
+      return NULL;
     }
     *ciphertext_len += len;
 
@@ -65,12 +64,11 @@ unsigned char *aes_cbc_decrypt(const unsigned char *ciphertext, int ciphertext_l
     unsigned char *plaintext;
 
     // Create and initialize the context
-    if (!(ctx = EVP_CIPHER_CTX_new())) {
-    return NULL;
-    }
-    if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
-    EVP_CIPHER_CTX_free(ctx);
-    return NULL;
+    if (!(ctx = EVP_CIPHER_CTX_new()))
+      return NULL;
+    if (EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv) != 1) {
+      EVP_CIPHER_CTX_free(ctx);
+      return NULL;
     }
 
     // Allocate memory for the plaintext
