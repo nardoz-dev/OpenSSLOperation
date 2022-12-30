@@ -14,7 +14,7 @@ All C code must be compiled from the terminal before being executed:
 
 > $./name_file
 
-#### Usage for the advanced program : 
+#### Usage for advanced program : 
 
 Usage: ./main create <key> <message>
 
