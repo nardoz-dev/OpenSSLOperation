@@ -11,6 +11,7 @@ All C code must be compiled from the terminal before being executed:
 
 ### Compile as follow 
 > $ gcc name_file.c -o name_file -lcrypto
+
 > $./name_file
 
 ## Python
