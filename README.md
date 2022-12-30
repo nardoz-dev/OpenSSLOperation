@@ -14,6 +14,17 @@ All C code must be compiled from the terminal before being executed:
 
 > $./name_file
 
+#### Usage for the advanced program : 
+
+Usage: ./main create <key> <message>
+
+> $./main create 0123456789abcdef "my secret message"
+
+Usage: ./main verify <signature> <key> <exponent> <modulus>
+
+> $./main verify "my secret message" 0123456789abcdef 10001 d46f473a2d746537de2056ae3092c451
+
+
 ## Python
 > $ python3 name_file.py
 
