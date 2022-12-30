@@ -1,6 +1,7 @@
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.asymmetric import dsa
+import hashlib
 from cryptography.hazmat.backends import default_backend
 
 # Generate a new ECDSA key pair
@@ -9,7 +10,8 @@ public_key = private_key.public_key()
 
 # Sign a message
 message = b'Hello, World!'
-message_digest = SHA256().digest(message)
+# Compute the hash of the message using SHA256
+message_digest = hashlib.sha256(message).digest()
 signature = private_key.sign(message_digest, ec.ECDSA(SHA256()))
 
 # Verify the signature
