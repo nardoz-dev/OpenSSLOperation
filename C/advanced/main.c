@@ -122,10 +122,8 @@ int verify_signature(unsigned char* signature, int signature_len, unsigned char*
 
     // Initialize RSA context
     RSA* rsa = RSA_new();
-    if(rsa == NULL ) {
-        rsa->e = e;
-        rsa->en = n;
-    }
+    RSA_set0_key(rsa, n, e, NULL);
+
 
 
     // Decrypt signature
