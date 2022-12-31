@@ -33,7 +33,7 @@ ciphertext = cipher.encrypt(message)
 # Encode the ciphertext as a base64 string for transport
 ciphertext_b64 = base64.b64encode(ciphertext)
 
-# Send the base64-encoded encrypted message, the signature, and the public key to the recipient
+# Send the encrypted message, the signature, and the public key to the recipient
 
 # The recipient can verify the signature using the public key
 if public_key.verify(signature, message_digest, ec.ECDSA(SHA256())):
