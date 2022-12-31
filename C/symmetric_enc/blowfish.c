@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
 
     // The encrypted message will be at least one block (8 bytes) larger than the padded message
     int encrypted_len = padded_len + BLOCK_SIZE;
-
+    printf("Original message: %s\n", message);
     // Print the encrypted message
     printf("Encrypted message: ");
     for (int i = 0; i < encrypted_len + BLOCK_SIZE; i++) {

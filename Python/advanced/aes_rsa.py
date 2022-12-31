@@ -1,63 +1,49 @@
-import hashlib
-import os
-from Crypto.Cipher import AES
-from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
+from Cryptodome.Cipher import AES
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Hash import SHA256
+from Cryptodome.Signature import PKCS1_v1_5
+from Cryptodome.Util.Padding import pad, unpad
 
-def encrypt_aes_cbc(plaintext, key, iv):
-    # pad the plaintext to a multiple of 16 bytes
-    plaintext = plaintext + b'\x00' * (16 - len(plaintext) % 16)
-    cipher = AES.new(key, AES.MODE_CBC, iv)
-    ciphertext = cipher.encrypt(plaintext)
-    return ciphertext
-
-def decrypt_aes_cbc(ciphertext, key, iv):
-    cipher = AES.new(key, AES.MODE_CBC, iv)
-    plaintext = cipher.decrypt(ciphertext)
-    return plaintext
-
-
-def sign_rsa(data, private_key):
-    signer = PKCS1_v1_5.new(private_key)
-    digest = hashlib.sha256(data).digest()
-    signature = signer.sign(digest)
-    return signature
-
-def verify_rsa(data, signature, public_key):
-    verifier = PKCS1_v1_5.new(public_key)
-    digest = hashlib.sha256(data).digest()
-    return verifier.verify(digest, signature)
-
-# generate a random 16-byte key and initialization vector for AES-CBC
-key = os.urandom(16)
-iv = os.urandom(16)
-
-# generate a new RSA key pair
+# Generate a new RSA key pair
 private_key = RSA.generate(2048)
 public_key = private_key.publickey()
 
-# encrypt the plaintext using AES-CBC
-plaintext = b'Hello, World!'
-ciphertext = encrypt_aes_cbc(plaintext, key, iv)
+# Set the key. This must be kept secret.
+key = b'0123456789abcdef'
 
-# sign the ciphertext with the private RSA key
-signature = sign_rsa(ciphertext, private_key)
+# The message to be encrypted.
+message = b'This is the message to be encrypted and signed.'
 
-# verify the signature with the public RSA key
-assert verify_rsa(ciphertext, signature, public_key)
+# Pad the message to a multiple of 8 bytes so that it can be encrypted.
+padded_message = pad(message, AES.block_size)
 
-# Simulate a trasmission of the data :  key, iv, ciphertext, and signature to the recipient
-transmitted_data = (key, iv, ciphertext, signature)
-# Receive the transmitted data
-received_key, received_iv, received_ciphertext, received_signature = transmitted_data
+# Create the cipher object and encrypt the message.
+cipher = AES.new(key, AES.MODE_ECB)
 
-# verify the signature with the public RSA key
-assert verify_rsa(received_ciphertext, received_signature, public_key)
+# Encrypt the message using the cipher
+ciphertext = cipher.encrypt(padded_message)
 
-# decrypt the ciphertext using AES-CBC
-decrypted_plaintext = decrypt_aes_cbc(received_ciphertext, received_key, received_iv)
+# Hash the encrypted message
+hashed_message = SHA256.new(ciphertext)
 
-# remove the padding from the decrypted plaintext
-decrypted_plaintext = decrypted_plaintext.rstrip(b'\x00')
+# Sign the hashed message using the private key
+signature = PKCS1_v1_5.new(private_key).sign(hashed_message)
 
-print(decrypted_plaintext)  # prints "Hello, World!"
+# Send the encrypted message and signature to the recipient
+
+# The recipient can verify the signature using the public key
+if PKCS1_v1_5.new(public_key).verify(hashed_message, signature):
+    print("Signature is valid.")
+else:
+    print("Signature not valid")
+
+# The recipient can decrypt the message using the shared secret key
+decryptor = AES.new(key, AES.MODE_ECB)
+plaintext_padded = decryptor.decrypt(ciphertext)
+
+# Remove the padding from the plaintext
+plaintext = unpad(plaintext_padded, AES.block_size)
+
+print(f'Original message: {message}')
+print(f'Encrypted message: {ciphertext}')
+print(f'Decrypted message: {plaintext}')
