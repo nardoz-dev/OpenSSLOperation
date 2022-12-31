@@ -1,11 +1,11 @@
 import random
 
+# Define the secret and the pair (n,k)
 def define_secret_and_parameters(secret, n, k):
-    # Define the secret and the pair (n,k)
     return secret, n, k
 
+# Generate the polynomial coefficients
 def generate_fragments(secret, n, k):
-    # Generate the polynomial coefficients
     coefficients = [secret] + [random.randint(0, secret) for i in range(k-1)]
 
     # Generate the fragments
@@ -16,16 +16,16 @@ def generate_fragments(secret, n, k):
 
     return fragments
 
+# Reconstruct the secret using Lagrange interpolation
 def reconstruct_secret(fragments, k):
-    # Reconstruct the secret using Lagrange interpolation
     secret = 0
     for i, fragment in enumerate(fragments[:k]):
         xi, yi = fragment
         secret += yi * product(xj/(xj - xi) for j, (xj, _) in enumerate(fragments[:k]) if i != j)
     return secret
 
+# Helper function to compute the product of a list of numbers
 def product(iterable):
-    # Helper function to compute the product of a list of numbers
     result = 1
     for x in iterable:
         result *= x
